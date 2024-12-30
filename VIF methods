@@ -1,0 +1,41 @@
+# Load required packages  
+library(car)  
+
+# Remove the response variable (Group) for VIF calculation  
+predictors <- TS_Syndrome[, !colnames(TS_Syndrome) %in% c("Group")]  
+
+# Create a linear model with all predictors  
+model <- lm(Group ~ ., data = TS_Syndrome)  
+
+# Calculate VIF  
+vif_values <- vif(model)  
+
+# Sort VIF values in descending order  
+sorted_vif <- sort(vif_values, decreasing = TRUE)  
+
+# Print all VIF values  
+print("VIF values for all variables:")  
+print(sorted_vif)  
+
+# Identify variables with high VIF (commonly using threshold of 5 or 10)  
+high_vif <- sorted_vif[sorted_vif > 5]  # You can change threshold to 10 if needed  
+print("\nVariables with VIF > 5:")  
+print(high_vif)  
+
+# Save results to a CSV file  
+vif_df <- data.frame(  
+    Variable = names(sorted_vif),  
+    VIF = sorted_vif  
+)  
+write.csv(vif_df, "VIF_results.csv", row.names = FALSE)  
+
+# Create a bar plot of VIF values  
+pdf("VIF_plot.pdf", width = 12, height = 8)  
+par(mar = c(10, 4, 4, 2))  
+barplot(sorted_vif,   
+        las = 2,            # Vertical x-axis labels  
+        main = "Variance Inflation Factors",  
+        ylab = "VIF",  
+        cex.names = 0.8)    # Adjust label size  
+abline(h = 5, col = "red", lty = 2)  # Add reference line at VIF = 5  
+dev.off()  
