@@ -1,6 +1,5 @@
 # Load required packages  
 library(Boruta)  
-library(mlbench)  
 
 # Set working directory  
 setwd("Your Path here")  
