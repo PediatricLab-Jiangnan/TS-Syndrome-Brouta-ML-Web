@@ -1,41 +1,55 @@
 # Load required packages  
 library(car)  
+library(ggplot2)  
 
-# Remove the response variable (Group) for VIF calculation  
-predictors <- TS_Syndrome[, !colnames(TS_Syndrome) %in% c("Group")]  
+# Set working directory  
+setwd("Your own path")  
 
-# Create a linear model with all predictors  
+# Load dataset and handle missing values  
+data <- read.csv("your own information")  
+TS_Syndrome <- na.omit(data)  # Rename to TS_Syndrome  
+
+# Create linear model and calculate VIF values  
 model <- lm(Group ~ ., data = TS_Syndrome)  
-
-# Calculate VIF  
 vif_values <- vif(model)  
 
-# Sort VIF values in descending order  
-sorted_vif <- sort(vif_values, decreasing = TRUE)  
-
-# Print all VIF values  
-print("VIF values for all variables:")  
-print(sorted_vif)  
-
-# Identify variables with high VIF (commonly using threshold of 5 or 10)  
-high_vif <- sorted_vif[sorted_vif > 5]  # You can change threshold to 10 if needed  
-print("\nVariables with VIF > 5:")  
-print(high_vif)  
-
-# Save results to a CSV file  
+# Create dataframe and filter VIF < 10  
 vif_df <- data.frame(  
-    Variable = names(sorted_vif),  
-    VIF = sorted_vif  
-)  
-write.csv(vif_df, "VIF_results.csv", row.names = FALSE)  
+    Variable = names(vif_values),  
+    VIF = vif_values  
+) %>%   
+    subset(VIF < 10) %>%  
+    arrange(desc(VIF))  # Sort by VIF in descending order  
 
-# Create a bar plot of VIF values  
-pdf("VIF_plot.pdf", width = 12, height = 8)  
-par(mar = c(10, 4, 4, 2))  
-barplot(sorted_vif,   
-        las = 2,            # Vertical x-axis labels  
-        main = "Variance Inflation Factors",  
-        ylab = "VIF",  
-        cex.names = 0.8)    # Adjust label size  
-abline(h = 5, col = "red", lty = 2)  # Add reference line at VIF = 5  
-dev.off()  
+# Create color gradient  
+n_colors <- nrow(vif_df)  
+colors <- colorRampPalette(c("#7CCD7C", "#6495ED", "#15317E"))(n_colors)  
+
+# Create plot using ggplot2  
+p <- ggplot(vif_df, aes(x = reorder(Variable, VIF), y = VIF)) +  
+    geom_bar(stat = "identity", fill = colors) +  
+    coord_flip() +  # Horizontal bars  
+    theme_minimal() +  
+    labs(  
+        title = "Variance Inflation Factor (VIF) of Features",  
+        x = "",  
+        y = "VIF"  
+    ) +  
+    theme(  
+        plot.title = element_text(hjust = 0.5, size = 14),  
+        axis.text.y = element_text(size = 10),  
+        axis.text.x = element_text(size = 10),  
+        panel.grid.major.y = element_blank(),  
+        panel.grid.minor = element_blank()  
+    )  
+
+# Save plots  
+ggsave("VIF_plot_filtered.pdf", p, width = 10, height = 6)  
+ggsave("VIF_plot_filtered.png", p, width = 10, height = 6, dpi = 300)  
+
+# Print results  
+print("Variables with VIF < 10:")  
+print(vif_df)  
+
+# Optional: Save detailed VIF results to CSV  
+write.csv(vif_df, "VIF_results_filtered.csv", row.names = FALSE)
